@@ -4,44 +4,31 @@
 
 using namespace std;
 
-
 int main() {
     funcionesApoyo fa;
     gestionRed gr;
 
-    fa.leerArchivo("estaciones.txt"); // Suponiendo que "archivo.txt" tiene el formato solicitado
+    fa.leerArchivo("estaciones.txt"); // Suponiendo que ".txt" tiene el formato solicitado
     fa.mostrarDatos();             // Mostrar todos los datos
 
-    int opcion;
+    int opcion = 0;
     do {
         fa.mostrarMenu();
         cin >> opcion;
 
         switch (opcion) {
         case 1:
-            // Lógica para agregar estación de servicio
-            // Utilizar funcionesApoyo para agregar la nueva estación
-            cout << "Funcionalidad de agregar estacion aun no implementada.\n";
-            break;
+            gr.agregarEstacion(fa);
         case 2:
-            // Lógica para eliminar estación de servicio
-            // Verificar estaciones sin surtidores activos
-            cout << "Funcionalidad de eliminar estacion aun no implementada.\n";
-            break;
+            gr.eliminarEstacion(fa);
         case 3:
-            // Calcular monto total de ventas
-            // Se trabajará sobre los arreglos cargados en funcionesApoyo
-            cout << "Funcionalidad de calcular ventas aun no implementada.\n";
-            break;
+            gr.calcularVentasPorEstacion(fa);
         case 4:
-            // Fijar precios del combustible por región
-            double nuevosPrecios[3];
-            cout << "Ingrese los nuevos precios para Regular, Premium y EcoExtra: ";
-            cin >> nuevosPrecios[0] >> nuevosPrecios[1] >> nuevosPrecios[2];
-            gr.cambiarPrecioCombustiblePorRegion("Norte", nuevosPrecios);
-            cout << "Precios actualizados.\n";
+            cout << "Guardando datos y saliendo...\n";
             break;
         case 0:
+            cout << "Guardando datos y saliendo...\n";
+            fa.guardarDatos("estaciones_guardadas.txt");
             cout << "Saliendo...\n";
             break;
         default:
