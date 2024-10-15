@@ -1,0 +1,12 @@
+# ID Proveedor | Nombre                  | Región  | Tipo Combustible | Capacidad de Suministro
+P001           | Proveedora del Norte    | Norte   | Regular          | 50000
+P002           | EcoCombustibles Norte   | Norte   | EcoExtra         | 25000
+P003           | Energías del Norte      | Norte   | Premium          | 30000
+P004           | Proveedora del Sur      | Sur     | Regular          | 50000
+P005           | EcoPro Sur              | Sur     | EcoExtra         | 25000
+P006           | Energías S.A. Sur       | Sur     | Premium          | 30000
+P007           | E. San Juan             | Centro  | Premium          | 35000
+P008           | Proveedora Centro       | Centro  | Regular          | 50000
+P009           | EcoCombustibles Centro  | Centro  | EcoExtra         | 25000
+
+
