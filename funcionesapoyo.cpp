@@ -9,7 +9,7 @@
 
 using namespace std;
 
-funcionesApoyo::funcionesApoyo() : totalEstaciones(0), totalIslas(0), totalTransacciones(0), totalnewEstacion(0) {
+funcionesApoyo::funcionesApoyo() : totalEstaciones(0), totalIslas(0), totalTransacciones(0), totalnewEstacion(0), gerente(false){
     totalnewEstacion = 0;
     srand(time(0));
 }
@@ -32,7 +32,7 @@ string funcionesApoyo::seleccionarRegion(){
     case 3: return "Sur";
     case 4: {
         string regionManual;
-        cout << "Ingrese el nombre de la región: ";
+        cout << "Ingrese el nombre de la region: ";
         cin.ignore(); // Limpiar buffer
         getline(cin, regionManual);
         return regionManual;
@@ -41,6 +41,100 @@ string funcionesApoyo::seleccionarRegion(){
         cout << "Opcion no valida, se asigna 'Norte' por defecto.\n";
         return "Norte";
     }
+}
+
+string funcionesApoyo::seleccionarTipoGasolina() {
+    int seleccion = 0;
+
+    // Mostrar opciones de gasolina disponibles
+    cout << "Selecciona el tipo de gasolina:" << endl;
+    cout << "1. Regular" << endl;
+    cout << "2. Premium" << endl;
+    cout << "3. EcoExtra" << endl;
+
+    // Solicitar la selección al usuario
+    while (true) {
+        cout << "Ingresa el numero correspondiente (1-3): ";
+        cin >> seleccion;
+
+        // Verificar si la entrada es válida
+        if (cin.fail() || seleccion < 1 || seleccion > 3) {
+            cin.clear(); // Limpiar el estado de error de cin
+            string invalidInput;
+            getline(cin, invalidInput); // Leer y descartar la entrada inválida
+            cout << "Error: opción no válida. Por favor, intenta de nuevo." << endl;
+        } else {
+            // Entrada válida, salir del bucle
+            break;
+        }
+    }
+
+    // Manejo de la selección de tipo de gasolina
+    switch (seleccion) {
+    case 1:
+        cout << "Gasolina seleccionada: Regular" << endl;
+        return "Regular";
+    case 2:
+        cout << "Gasolina seleccionada: Premium" << endl;
+        return "Premium";
+    case 3:
+        cout << "Gasolina seleccionada: EcoExtra" << endl;
+        return "EcoExtra";
+    default:
+        // Este caso no debería ocurrir, pero lo incluimos como manejo de errores
+        cout << "Error inesperado." << endl;
+        return "";
+    }
+}
+
+string funcionesApoyo::seleccionarMetodoPago() {
+    string seleccion;
+
+    // Mostrar opciones de métodos de pago disponibles
+    cout << "Selecciona el metodo de pago:" << endl;
+    cout << "E. Efectivo" << endl;
+    cout << "TC. Tarjeta de Credito" << endl;
+    cout << "TD. Tarjeta de Debito" << endl;
+
+    // Solicitar la selección al usuario
+    while (true) {
+        cout << "Ingresa el metodo de pago (E/TC/TD): ";
+        cin >> seleccion;
+
+        // Convertir la entrada a minúsculas para realizar las comparaciones
+        if (seleccion == "e" || seleccion == "E") {
+            cout << "Metodo de pago seleccionado: Efectivo" << endl;
+            return "E";
+        } else if (seleccion == "tc" || seleccion == "TC") {
+            cout << "Metodo de pago seleccionado: Tarjeta de Credito" << endl;
+            return "TC";
+        } else if (seleccion == "td" || seleccion == "TD") {
+            cout << "Método de pago seleccionado: Tarjeta de Debito" << endl;
+            return "TD";
+        } else {
+            cout << "Error: opcion no valida. Por favor, intenta de nuevo." << endl;
+        }
+    }
+}
+
+bool funcionesApoyo::validarIdUsuario(const string &idUsuario) {
+    // Verificar que la longitud esté entre 8 y 10 caracteres
+    int longitud = idUsuario.length();
+    if (longitud < 8 || longitud > 10) {
+        cout << "Error: El ID de usuario debe tener entre 8 y 10 digitos." << endl;
+        return false;
+    }
+
+    // Verificar que todos los caracteres sean números
+    for (int i = 0; i < longitud; i++) {
+        if (idUsuario[i] < '0' || idUsuario[i] > '9') {
+            cout << "Error: El ID de usuario solo puede contener numeros." << endl;
+            return false;
+        }
+    }
+
+    // Si pasa ambas validaciones
+    return true;
 }
 
 string funcionesApoyo::generarCoordenadasGPS(){
@@ -67,6 +161,11 @@ string funcionesApoyo::trim(const string& str) {
     size_t last = str.find_last_not_of(' ');
     return str.substr(first, (last - first + 1));
 }
+
+string funcionesApoyo::addPadding(const string &str) {
+    return "  " + str + "  ";  // Agrega un espacio antes y después de la cadena
+}
+
 
 void funcionesApoyo::leerArchivo(const string &archivo) {
     ifstream archivoEntrada(archivo);
@@ -140,6 +239,67 @@ void funcionesApoyo::procesarTransacciones(const string &linea) {
     totalTransacciones++;
 }
 
+void funcionesApoyo::leerArchivoPrecios(const string &archivoPrecios) {
+    ifstream archivoEntrada(archivoPrecios);
+    string linea;
+
+    if (archivoEntrada.is_open()) {
+        while (getline(archivoEntrada, linea)) {
+            if (!linea.empty() && linea.find_first_not_of(' ') != string::npos) { // Verifica que la línea no esté vacía
+                procesarPrecios(linea); // Procesa la línea si no está vacía
+            }
+        }
+        archivoEntrada.close();
+    } else {
+        cerr << "Error: No se pudo abrir el archivo de precios." << endl;
+    }
+}
+
+void funcionesApoyo::procesarPrecios(const string &linea) {
+    if (linea[0] == '#' || linea.empty()) return;  // Ignorar comentarios o líneas vacías
+
+    stringstream ss(linea);
+    string region, regularStr, premiumStr, ecoExtraStr;
+    double regular, premium, ecoExtra;
+
+    // Leer el formato con el delimitador '|'
+    getline(ss, region, '|');
+    getline(ss, regularStr, '|');
+    getline(ss, premiumStr, '|');
+    getline(ss, ecoExtraStr, '|');
+
+    // Quitar espacios en blanco alrededor de los valores
+    region = trim(region);
+    regular = stod(trim(regularStr));
+    premium = stod(trim(premiumStr));
+    ecoExtra = stod(trim(ecoExtraStr));
+
+    // Guardar los precios en el arreglo 'precios'
+    if (region == "Norte") {
+        precios[0][0] = region;
+        precios[0][1] = to_string(regular);
+        precios[0][2] = to_string(premium);
+        precios[0][3] = to_string(ecoExtra);
+    } else if (region == "Sur") {
+        precios[1][0] = region;
+        precios[1][1] = to_string(regular);
+        precios[1][2] = to_string(premium);
+        precios[1][3] = to_string(ecoExtra);
+    } else if (region == "Centro") {
+        precios[2][0] = region;
+        precios[2][1] = to_string(regular);
+        precios[2][2] = to_string(premium);
+        precios[2][3] = to_string(ecoExtra);
+    }
+}
+
+double funcionesApoyo::solicitarPrecio(string tipoCombustible) {
+    double precio;
+    cout << "Ingrese el precio para " << tipoCombustible << ": ";
+    cin >> precio;
+    return precio;
+}
+
 void funcionesApoyo::mostrarDatos() {
     cout << "Estaciones:\n";
     for (int i = 0; i < totalEstaciones; ++i) {
@@ -166,29 +326,145 @@ void funcionesApoyo::mostrarDatos() {
     }
 }
 
-bool funcionesApoyo::ingresarComoAdmin() {
-    string usuario, contrasena;
-    cout << "Ingrese su usuario: ";
-    cin >> usuario;
-    cout << "Ingrese su clave: ";
-    cin >> contrasena;
+void funcionesApoyo::mostrarPrecios() {
+    cout << "\nPrecios de Combustible:\n";
 
-    // Simulación de autenticación
-    if (usuario == "admin" && contrasena == "1234") {
-        return true;
-    } else {
-        cout << "Usuario o clave incorrectos." << endl;
-        return false;
+    cout << fixed << setprecision(2);  // Establece la precisión a 2 decimales
+
+    // Convertir strings a double para aplicar el formato adecuado
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 1; j <= 3; ++j) {
+            // Convertir string a double y luego mostrar con 2 decimales
+            double precio = stod(precios[i][j]);
+            cout << fixed << setprecision(2) << precio;
+
+            if (j == 1) cout << " (Regular) | ";
+            else if (j == 2) cout << " (Premium) | ";
+            else cout << " (EcoExtra)";
+        }
+        cout << endl;
     }
 }
 
-void funcionesApoyo::mostrarMenu() {
-    cout << "\nOpciones de gestion de la red:\n";
+
+bool funcionesApoyo::loginUsuario() {
+    string usuarioIngresado, contrasenaIngresada;
+    string linea, usuarioArchivo, contrasenaArchivo;
+    bool accesoConcedido = false;
+
+    // Solicitar credenciales al usuario
+    cout <<"\n";
+    cout <<"Ingrese su usuario: " << endl;
+    cin >> usuarioIngresado;
+    cout <<"\n";
+    cout <<"Ingrese su clave: " << endl;
+    cin >> contrasenaIngresada;
+
+    // Abrir el archivo de usuarios
+    ifstream archivoUsuarios("usuarios.txt");
+
+    if (archivoUsuarios.is_open()) {
+        while (getline(archivoUsuarios, linea)) {
+            stringstream ss(linea);
+            getline(ss, usuarioArchivo, '|');
+            getline(ss, contrasenaArchivo);
+
+            // Quitar espacios en blanco
+            usuarioArchivo = trim(usuarioArchivo);
+            contrasenaArchivo = trim(contrasenaArchivo);
+
+            // Validar credenciales
+            if (usuarioIngresado == usuarioArchivo && contrasenaIngresada == contrasenaArchivo) {
+                accesoConcedido = true;
+                gerente = (usuarioIngresado != "empleado.estandar");
+
+                // Mensaje de bienvenida
+                if (gerente) {
+                    cout << "\nBienvenido, " << usuarioIngresado << ".\n";
+                } else {
+                    cout << "\nBienvenido empleado.\n";
+                }
+                break;
+            }
+        }
+        archivoUsuarios.close();
+    } else {
+        cerr << "No se pudo abrir el archivo de usuarios.\n";
+    }
+
+    if (!accesoConcedido) {
+        cout << "Usuario o clave incorrectos. Intente de nuevo.\n";
+        return false;
+    }
+    return true;
+}
+
+bool funcionesApoyo::esGerente() const{
+    return gerente;
+}
+
+void funcionesApoyo::mostrarMenuAdministrador(){
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "--- Menu de Administrador ---\n";
+    cout << "1 - Gestion de la red\n";
+    cout << "2 - Gestion de estaciones de servicio\n";
+    cout << "3 - Sistema nacional de verificacion de fugas\n";
+    cout << "4 - Simulacion de ventas\n";
+    cout << "0 - Salir\n";
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "Seleccione una opcion: ";
+}
+
+void funcionesApoyo::mostrarMenuEmpleado(){
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "--- Menu de Empleado ---\n";
+    cout << "1 - Gestion de estaciones de servicio\n";
+    cout << "2 - Simulacion de ventas\n";
+    cout << "0 - Salir\n";
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "Seleccione una opcion: ";
+}
+
+void funcionesApoyo::mostrarSubMenuGestionRed() {
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << " - Opciones de gestion de la red:\n";
     cout << "1. Agregar estacion de servicio.\n";
     cout << "2. Eliminar estacion de servicio (si no tiene surtidores activos).\n";
     cout << "3. Calcular monto total de ventas.\n";
     cout << "4. Fijar precios del combustible por region.\n";
-    cout << "0. Salir.\n";
+    cout << "0. Volver al menu principal.\n";
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "Seleccione una opcion: ";
+}
+
+void funcionesApoyo::mostrarSubMenuGestionEstaciones(){
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << " - Gestion de estaciones de servicio:\n";
+    cout << "1. Agregar/eliminar un surtidor a una E/S.\n";
+    cout << "2. Activar/desactivar un surtidor de una E/S.\n";
+    cout << "3. Consultar el historico de transacciones de cada surtidor de la E/S.\n";
+    cout << "4. Reportar la cantidad de litros vendidos segun cada categoria de combustible.\n";
+    cout << "5. Simular una venta de combustible.\n";
+    cout << "0. Volver al menu principal\n";
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "Seleccione una opcion: ";
+}
+
+void funcionesApoyo::mostrarSubMenuVerificacionFugas(){
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << " - Sistema nacional de verificacion de fugas:\n";
+    cout << "1. Detectar fugas en una estacion especifica.\n";
+    cout << "0. Volver al menu principal\n";
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "Seleccione una opcion: ";
+}
+
+void funcionesApoyo::mostrarSubMenuSimulacionVentas(){
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << " - Simulacion de ventas:\n";
+    cout << "1. Simular una venta en una estacion de servicio.\n";
+    cout << "0. Volver al menu principal\n";
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
     cout << "Seleccione una opcion: ";
 }
 
@@ -216,6 +492,29 @@ void funcionesApoyo::agregarEstacion(const string &codigo, const string &nombre,
     // Después de agregar una estación, transferirla al arreglo estaciones
     transferirNuevaEstacion();
 }
+
+void funcionesApoyo::agregarTransaccion(const string &codigoEstacion, const string &codigoIsla, const string &fecha, const string &hora, const string tipoGasolina, int litrosVendidos, const string &metodoPago, const string &idUsuario, int precioPorLitro, int montoPagado) {
+    if (totalnewTransacciones < 1000) {
+        // Asignar los valores al arreglo de transacciones
+        newTransaccion[totalnewTransacciones][0] = codigoEstacion;
+        newTransaccion[totalnewTransacciones][1] = codigoIsla;
+        newTransaccion[totalnewTransacciones][2] = fecha;
+        newTransaccion[totalnewTransacciones][3] = hora;
+        newTransaccion[totalnewTransacciones][4] = tipoGasolina;
+        newTransaccion[totalnewTransacciones][5] = to_string(litrosVendidos);
+        newTransaccion[totalnewTransacciones][6] = metodoPago;
+        newTransaccion[totalnewTransacciones][7] = idUsuario;
+        newTransaccion[totalnewTransacciones][8] = to_string(precioPorLitro);
+        newTransaccion[totalnewTransacciones][9] = to_string(montoPagado);
+
+        // Incrementar el total de transacciones
+        totalnewTransacciones++;
+    } else {
+        cout << "Error: No se pueden agregar mas transacciones, limite alcanzado." << endl;
+    }
+    transferirNuevaTransaccion();
+}
+
 
 // Función para contar cuántos gerentes hay en el archivo
 int funcionesApoyo::contarGerentes(const string& nombreArchivo) {
@@ -304,7 +603,7 @@ int funcionesApoyo::seleccionarGerente(string* codigos, string* nombres, int tot
 void funcionesApoyo::transferirNuevaEstacion(){
     // Copiar los datos de newEstacion al arreglo estaciones
     for (int i = 0; i < totalnewEstacion; i++) {
-        for (int j = 0; j < 8; j++) {
+        for (int j = 0; j < 9; j++) {
             estaciones[totalEstaciones][j] = newEstacion[i][j];
         }
         totalEstaciones++; // Incrementar el contador de estaciones
@@ -312,12 +611,31 @@ void funcionesApoyo::transferirNuevaEstacion(){
 
     // Limpiar el arreglo newEstacion y restablecer totalnewEstacion a 0
     for (int i = 0; i < totalnewEstacion; i++) {
-        for (int j = 0; j < 8; j++) {
+        for (int j = 0; j < 9; j++) {
             newEstacion[i][j].clear(); // Limpiar cada campo de newEstacion
         }
     }
     totalnewEstacion = 0; // Reiniciar el contador de nuevas estaciones
 }
+
+void funcionesApoyo::transferirNuevaTransaccion() {
+    // Copiar los datos de newTransaccion al arreglo transacciones
+    for (int i = 0; i < totalnewTransacciones; i++) {
+        for (int j = 0; j < 10; j++) {
+            transacciones[totalTransacciones][j] = newTransaccion[i][j];
+        }
+        totalTransacciones++;
+    }
+
+    // Limpiar el arreglo newTransaccion y restablecer totalnewTransacciones a 0
+    for (int i = 0; i < totalnewTransacciones; i++) {
+        for (int j = 0; j < 10; j++) {
+            newTransaccion[i][j].clear();
+        }
+    }
+    totalnewTransacciones = 0; // Reiniciar el contador de nuevas transacciones
+}
+
 
 bool funcionesApoyo::identificarEstacion(string &idEstacion){
     for (int i = 0; i < totalEstaciones; i++){
@@ -353,6 +671,242 @@ bool funcionesApoyo::VersiEstacionesEliminable(string &idEstacion){
         }
     }
     return true;
+}
+
+string funcionesApoyo::seleccionarEstacion(){
+    if (totalEstaciones == 0){
+        cout << "No hay estaciones disponibles." << endl;
+        return ""; // Indica que no hay estaciones
+    }
+    // Muestra todas las estaciones disponibles
+    for (int i = 0; i < totalEstaciones; ++i) {
+        cout << i + 1 << " - " << trim(estaciones[i][0]) << " - " << trim(estaciones[i][1]) << endl;
+    }
+
+    // Solicita al usuario que seleccione una estacion
+    int seleccion = 0;
+    cout << "Ingrese el numero de la estacion que desea seleccionar: ";
+    cin >> seleccion;
+
+    // Validar que la seleccion sea valida
+    while (seleccion < 1 || seleccion > totalEstaciones) {
+        cout << "Seleccion invalida. Intente de nuevo: ";
+        cin >> seleccion;
+    }
+
+    // Retorna el código de la estación seleccionada
+    return trim(estaciones[seleccion - 1][0]);
+}
+
+string funcionesApoyo::seleccionarIslaAleatoria(int codigoEstacion) {
+    int contador = 0;
+    cout << "Islas activas en la estacion " << codigoEstacion << ":" << endl;
+
+    for (int i = 0; i < totalIslas; ++i) {
+        // Verificar si la isla pertenece a la estación seleccionada y está activa
+        if (stoi(trim(islas[i][0])) == codigoEstacion && trim(islas[i][3]) == "1") {
+            cout << contador + 1 << ". Isla codigo: " << trim(islas[i][1]) << endl;
+            islasActivas[contador] = trim(islas[i][1]);
+            contador++;
+        }
+    }
+
+    if (contador == 0) {
+        cout << "No hay islas activas en esta estacion." << endl;
+        return "";
+    }
+
+    // Semilla para generar numero aleatorios
+    srand(static_cast<unsigned int>(time(0)));
+
+    // Seleccionar un índice aleatorio en el rango de islas activas
+    int indiceAleatorio = rand() % contador;
+
+    // Devolver el codigo de la isla seleccionada aleatoriamente
+    string islaSeleccionada = islasActivas[indiceAleatorio];
+    cout << "Isla seleccionada aleatoriamente: " << islaSeleccionada << endl;
+    return islaSeleccionada;
+}
+
+int funcionesApoyo::generarVentaAleatoria(int codigoEstacion, const string& tipoGasolina, const string& codigoIsla) {
+    // Generar un número aleatorio entre 3 y 20 litros
+    srand(static_cast<unsigned int>(time(0)));
+    int litrosSolicitados = rand() % 18 + 3; // Genera un número entre 3 y 20
+
+    // Buscar la estación seleccionada en el arreglo estaciones
+    int indiceEstacion = -1;
+    for (int i = 0; i < totalEstaciones; ++i) {
+        if (stoi(trim(estaciones[i][0])) == codigoEstacion) {
+            indiceEstacion = i;
+            break;
+        }
+    }
+
+    if (indiceEstacion == -1) {
+        cout << "Error: Estacion no encontrada." << endl;
+        return -1; // Error, estación no encontrada
+    }
+
+    // Verificar si hay suficiente gasolina disponible y realizar la venta
+    realizarVenta(indiceEstacion, codigoIsla, litrosSolicitados, tipoGasolina);
+
+    return litrosSolicitados; // Devuelve la cantidad de litros solicitados
+}
+
+int funcionesApoyo::verificarCantidadDisponible(int indiceEstacion, const string &tipoGasolina) {
+    int cantidadDisponible = 0;
+
+    // Verificar el tipo de gasolina y obtener la cantidad disponible
+    if (tipoGasolina == "Regular") {
+        cantidadDisponible = stoi(trim(estaciones[indiceEstacion][6])); // Cantidad de Regular
+    } else if (tipoGasolina == "Premium") {
+        cantidadDisponible = stoi(trim(estaciones[indiceEstacion][7])); // Cantidad de Premium
+    } else if (tipoGasolina == "EcoExtra") {
+        cantidadDisponible = stoi(trim(estaciones[indiceEstacion][8])); // Cantidad de EcoExtra
+    } else {
+        cout << "Error: Tipo de gasolina no valido." << endl;
+        return -1; // Error, tipo de gasolina no válido
+    }
+
+    return cantidadDisponible; // Devolver la cantidad disponible
+}
+
+void funcionesApoyo::realizarVenta(int indiceEstacion, const string &codigoIsla, int litrosSolicitados, const string &tipoGasolina) {
+    // Verificar la cantidad disponible de gasolina
+    int cantidadDisponible = verificarCantidadDisponible(indiceEstacion, tipoGasolina);
+    if (cantidadDisponible == -1) {
+        cout << "Error al verificar la cantidad disponible." << endl;
+        return;
+    }
+
+    // Determinar la cantidad a vender (mínimo entre litros solicitados y disponibles)
+    int litrosAVender = std::min(litrosSolicitados, cantidadDisponible);
+
+    if (litrosAVender > 0) {
+        cout << "Se pueden vender " << litrosAVender << " litros de " << tipoGasolina << "." << endl;
+
+        // Restar la cantidad vendida en la isla donde se realiza la venta
+        int nuevaCantidad = cantidadDisponible - litrosAVender;
+        cout << "La cantidad disponible era: " << cantidadDisponible << ". Se vendio la cantidad de: " << litrosAVender << ". La reserva de combustible queda en: " << nuevaCantidad << endl;
+
+        // Actualizar la cantidad de gasolina en la isla donde se realiza la venta
+        if (tipoGasolina == "Regular") {
+            islas[indiceEstacion][7] = addPadding(to_string(nuevaCantidad));
+            actualizarVentasPorIsla(codigoIsla, litrosAVender, "Regular");
+        } else if (tipoGasolina == "Premium") {
+            islas[indiceEstacion][8] = addPadding(to_string(nuevaCantidad));
+            actualizarVentasPorIsla(codigoIsla, litrosAVender, "Premium");
+        } else if (tipoGasolina == "EcoExtra") {
+            islas[indiceEstacion][9] = addPadding(to_string(nuevaCantidad));
+            actualizarVentasPorIsla(codigoIsla, litrosAVender, "EcoExtra");
+        }
+
+        // Obtener el código de la estación para actualizar las demás islas
+        string codigoEstacion = islas[indiceEstacion][0];
+
+        // Recorrer todas las islas para actualizar solo la cantidad restante en las islas de la misma estación
+        for (int i = 0; i < totalIslas; ++i) {
+            if (i != indiceEstacion && islas[i][0] == codigoEstacion) {
+                // Actualizar la cantidad restante sin volver a restar
+                if (tipoGasolina == "Regular") {
+                    islas[i][7] = addPadding(to_string(nuevaCantidad));
+                } else if (tipoGasolina == "Premium") {
+                    islas[i][8] = addPadding(to_string(nuevaCantidad));
+                } else if (tipoGasolina == "EcoExtra") {
+                    islas[i][9] = addPadding(to_string(nuevaCantidad));
+                }
+            }
+            // Verificar si los tres tanques están en cero
+            int regular = stoi(islas[i][7]);
+            int premium = stoi(islas[i][8]);
+            int ecoExtra = stoi(islas[i][9]);
+
+            if (regular == 0 && premium == 0 && ecoExtra == 0) {
+                // Actualizar el estado de la isla a 0 (inactiva)
+                islas[i][3] = "0";
+                cout << "La isla con codigo " << islas[i][1] << " esta ahora inactiva porque todos los tanques estan vacios." << endl;
+            }
+        }
+    } else {
+        cout << "No hay suficiente gasolina para completar la venta." << endl;
+    }
+}
+
+void funcionesApoyo::actualizarVentasPorIsla(const string &codigoIsla, int litrosVendidos, const string &tipoGasolina) {
+    // Buscar la isla correspondiente
+    for (int i = 0; i < totalIslas; ++i) {
+        if (trim(islas[i][1]) == codigoIsla) {
+            // Actualizar la cantidad de gasolina vendida según el tipo de gasolina
+            if (tipoGasolina == "Regular") {
+                islas[i][4] = addPadding(to_string(stoi(islas[i][4]) + litrosVendidos)); // columna 4 para Regular
+            } else if (tipoGasolina == "Premium") {
+                islas[i][5] = addPadding(to_string(stoi(islas[i][4]) + litrosVendidos)); // columna 5 para Premium
+            } else if (tipoGasolina == "EcoExtra") {
+                islas[i][6] = addPadding(to_string(stoi(islas[i][4]) + litrosVendidos)); // columna 6 para EcoExtra
+            }
+
+            cout << "Actualizada la venta en la isla " << codigoIsla << ": "
+                 << litrosVendidos << " litros de " << tipoGasolina << endl;
+            return;
+        }
+    }
+
+    // Si la isla no se encuentra
+    cout << "Error: No se encontro la isla con codigo " << codigoIsla << endl;
+}
+
+
+void funcionesApoyo::agregarsEstacion(const string &codigo, const string &nombre){
+    if (totalEstaciones < MAX_ESTACIONES) {
+        sEstacion[totalEstaciones][0] = codigo;  // Codigo de la estacion
+        sEstacion [totalEstaciones][1] = nombre;  // Nombre de la estacion
+        totalEstaciones++;
+        // Mostrar las estaciones almacenadas
+        cout << "Estaciones almacenadas:" << endl;
+        for (int i = 0; i < totalEstaciones; ++i) {
+            if (!sEstacion[i][0].empty() && !sEstacion[i][1].empty()){
+            cout << i + 1 << " - " << sEstacion[i][0] << " - " << sEstacion[i][1] << endl;
+            }
+        }
+    } else {
+        cout << "No se pueden agregar mas estaciones." << endl;
+    }
+}
+
+void funcionesApoyo::verificarTanque(double capacidadTanque, double nivelActual, double totalVentas, const string& tipoGasolina) {
+    // Cálculo para verificar la fuga
+    double porcentajeOperativo = (nivelActual + totalVentas) / capacidadTanque * 100.0;
+
+    cout << fixed << setprecision(2);
+
+    // Si el nivel es inferior al 95%, hay una posible fuga
+    if (porcentajeOperativo < 95.0) {
+        cout << "Posible fuga detectada en el tanque de " << tipoGasolina << ". Operando al " << setprecision(2) << porcentajeOperativo << "% de capacidad." << endl;
+    } else {
+        cout << "El tanque de " << tipoGasolina << " esta operando correctamente (" << setprecision(2) << porcentajeOperativo << "% de capacidad)." << endl;
+    }
+}
+
+void funcionesApoyo::guardarPrecios(const string &archivoPrecios) {
+    ofstream archivoSalida(archivoPrecios);
+
+    if (archivoSalida.is_open()) {
+        archivoSalida << fixed << setprecision(2);
+
+        // Guardar los precios de la región Norte
+        archivoSalida << precios[0][0] << " | " << stod(precios[0][1]) << " | " << stod(precios[0][2]) << " | " << stod(precios[0][3]) << endl;
+
+        // Guardar los precios de la región Sur
+        archivoSalida << precios[1][0] << " | " << stod(precios[1][1]) << " | " << stod(precios[1][2]) << " | " << stod(precios[1][3]) << endl;
+
+        // Guardar los precios de la región Centro
+        archivoSalida << precios[2][0] << " | " << stod(precios[2][1]) << " | " << stod(precios[2][2]) << " | " << stod(precios[2][3]) << endl;
+
+        archivoSalida.close();
+        cout << "Los precios han sido guardados exitosamente en el archivo." << endl;
+    } else {
+        cerr << "Error: No se pudo abrir el archivo para guardar los precios." << endl;
+    }
 }
 
 void funcionesApoyo::guardarRespaldo(const string &idEstacion, string estaciones[][MAX_COLUMNAS_E], int totalEstaciones, string islas[][MAX_COLUMNAS_I], int totalIslas, string transacciones[][MAX_COLUMNAS_T], int totalTransacciones) {
@@ -400,10 +954,10 @@ void funcionesApoyo::guardarRespaldo(const string &idEstacion, string estaciones
     cout << "Respaldo guardado en papelera.txt para la estacion " << idEstacion << endl;
 }
 
-void funcionesApoyo::guardarDatos(const string &nombreArchivo){
+void funcionesApoyo::guardarDatos(const string &nombreArchivo) {
     ofstream archivoSalida(nombreArchivo);
 
-    if (!archivoSalida.is_open()){
+    if (!archivoSalida.is_open()) {
         cerr << "Error al abrir el archivo para guardar los datos.\n";
         return;
     }
@@ -411,20 +965,33 @@ void funcionesApoyo::guardarDatos(const string &nombreArchivo){
     // Guardar estaciones
     archivoSalida << "%\n";
     for (int i = 0; i < totalEstaciones; ++i) {
+        bool filaValida = false;
+
+        // Verificar si hay al menos un campo no vacío
         for (int j = 0; j < 9; ++j) {
-            archivoSalida << estaciones[i][j];
-            if (j < 8) archivoSalida << " | "; // Separador entre columnas
+            if (!trim(estaciones[i][j]).empty()) {
+                filaValida = true;
+                break;
+            }
         }
-        archivoSalida << "\n";
+
+        // Solo guardar la estación si es válida (no está completamente vacía)
+        if (filaValida) {
+            for (int j = 0; j < 9; ++j) {
+                archivoSalida << trim(estaciones[i][j]);
+                if (j < 8) archivoSalida << " | "; // Agregar separador entre columnas
+            }
+            archivoSalida << "\n";
+        }
     }
     archivoSalida << "%\n";
 
     // Guardar islas
     archivoSalida << "$\n";
     for (int i = 0; i < totalIslas; ++i) {
-        for (int j = 0; j < 7; ++j) {
-            archivoSalida << islas[i][j];
-            if (j < 6) archivoSalida << " | "; // Separador entre columnas
+        for (int j = 0; j < 10; ++j) {
+            archivoSalida << trim(islas[i][j]);
+            if (j < 9) archivoSalida << " | "; // Agregar separador entre columnas
         }
         archivoSalida << "\n";
     }
@@ -434,8 +1001,8 @@ void funcionesApoyo::guardarDatos(const string &nombreArchivo){
     archivoSalida << "&\n";
     for (int i = 0; i < totalTransacciones; ++i) {
         for (int j = 0; j < 10; ++j) {
-            archivoSalida << transacciones[i][j];
-            if (j < 9) archivoSalida << " | "; // Separador entre columnas
+            archivoSalida << trim(transacciones[i][j]);
+            if (j < 9) archivoSalida << " | "; // Agregar separador entre columnas
         }
         archivoSalida << "\n";
     }
@@ -444,4 +1011,8 @@ void funcionesApoyo::guardarDatos(const string &nombreArchivo){
     archivoSalida.close();
     cout << "Datos guardados correctamente en " << nombreArchivo << endl;
 }
+
+
+
+
 
