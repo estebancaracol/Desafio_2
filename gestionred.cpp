@@ -198,7 +198,6 @@ void gestionRed::calcularVentasPorEstacion(funcionesApoyo &fa){
 
 void gestionRed::fijarPreciosCombustible(funcionesApoyo &fa){
     try{
-        fa.leerArchivoPrecios("precios.txt");
         fa.mostrarPrecios();
 
         double precioNorte[3];
