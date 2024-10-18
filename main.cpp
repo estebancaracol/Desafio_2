@@ -11,6 +11,7 @@ int main() {
     simulacionVentas sv;
 
     fa.leerArchivo("estaciones.txt");
+    fa.leerArchivoPrecios("precios.txt");
     fa.mostrarDatos();
 
     bool salir = false;  // Bandera para controlar el ciclo principal
