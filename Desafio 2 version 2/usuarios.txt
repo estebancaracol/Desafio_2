@@ -1,0 +1,12 @@
+esteban.rodriguez | 3797
+juan.perez | 1234
+maria.gomez | 5678
+carlos.ramirez | 9101
+ana.fernandez | 2345
+pedro.martinez | 6789
+laura.torres | 3456
+andres.morales | 7890
+sofia.garcia | 4567
+luis.sanchez | 8901
+elena.rojas | 1230
+empleado.estandar | empleado123
